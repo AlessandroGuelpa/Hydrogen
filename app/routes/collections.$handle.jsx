@@ -47,7 +47,7 @@ export default function Collection() {
 
   return (
     <div className="collection">
-      <h1>{collection.title}</h1>
+      <h1 style={{textAlign: 'center'}}>{collection.title}</h1>
       <p className="collection-description">{collection.description}</p>
       <Pagination connection={collection.products}>
         {({nodes, isLoading, PreviousLink, NextLink}) => (
@@ -111,6 +111,7 @@ function ProductItem({product, loading}) {
           sizes="(min-width: 45em) 400px, 100vw"
         />
       )}
+      <p>{product.vendor}</p>
       <h4>{product.title}</h4>
       <small>
         <Money data={product.priceRange.minVariantPrice} />
@@ -127,6 +128,7 @@ const PRODUCT_ITEM_FRAGMENT = `#graphql
   fragment ProductItem on Product {
     id
     handle
+    vendor
     title
     featuredImage {
       id
