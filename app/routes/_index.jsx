@@ -2,6 +2,7 @@ import {defer} from '@shopify/remix-oxygen';
 import {Await, useLoaderData, Link} from '@remix-run/react';
 import {Suspense} from 'react';
 import {Image, Money} from '@shopify/hydrogen';
+import ProductGrid from '../components/ProductGrid';
 
 /**
  * @type {MetaFunction}
@@ -53,7 +54,12 @@ function FeaturedCollection({collection}) {
       )}
       <h1>{collection.title}</h1>
     </Link>
+
   );
+  <ProductGrid
+        collection={collection}
+        url={`/collections/${collection.handle}`}
+      />
 }
 
 /**
@@ -94,6 +100,46 @@ function RecommendedProducts({products}) {
     </div>
   );
 }
+
+const COLLECTION_QUERY = `#graphql
+  query FeaturedCollections {
+  collections(first: 1, query: "collection_type:smart") {
+    nodes {
+      id
+      title
+      handle
+      products(first: 4) {
+        nodes {
+          id
+          title
+          publishedAt
+          handle
+          variants(first: 1) {
+            nodes {
+              id
+              image {
+                url
+                altText
+                width
+                height
+              }
+              price {
+                amount
+                currencyCode
+              }
+              compareAtPrice {
+                amount
+                currencyCode
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+`;
+
 
 const FEATURED_COLLECTION_QUERY = `#graphql
   fragment FeaturedCollection on Collection {

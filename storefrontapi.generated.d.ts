@@ -252,6 +252,47 @@ export type SitemapQuery = {
   };
 };
 
+export type FeaturedCollectionsQueryVariables = StorefrontAPI.Exact<{
+  [key: string]: never;
+}>;
+
+export type FeaturedCollectionsQuery = {
+  collections: {
+    nodes: Array<
+      Pick<StorefrontAPI.Collection, 'id' | 'title' | 'handle'> & {
+        products: {
+          nodes: Array<
+            Pick<
+              StorefrontAPI.Product,
+              'id' | 'title' | 'publishedAt' | 'handle'
+            > & {
+              variants: {
+                nodes: Array<
+                  Pick<StorefrontAPI.ProductVariant, 'id'> & {
+                    image?: StorefrontAPI.Maybe<
+                      Pick<
+                        StorefrontAPI.Image,
+                        'url' | 'altText' | 'width' | 'height'
+                      >
+                    >;
+                    price: Pick<
+                      StorefrontAPI.MoneyV2,
+                      'amount' | 'currencyCode'
+                    >;
+                    compareAtPrice?: StorefrontAPI.Maybe<
+                      Pick<StorefrontAPI.MoneyV2, 'amount' | 'currencyCode'>
+                    >;
+                  }
+                >;
+              };
+            }
+          >;
+        };
+      }
+    >;
+  };
+};
+
 export type FeaturedCollectionFragment = Pick<
   StorefrontAPI.Collection,
   'id' | 'title' | 'handle'
@@ -1086,6 +1127,10 @@ interface GeneratedQueryTypes {
   '#graphql\n  query Sitemap($urlLimits: Int, $language: LanguageCode)\n  @inContext(language: $language) {\n    products(\n      first: $urlLimits\n      query: "published_status:\'online_store:visible\'"\n    ) {\n      nodes {\n        updatedAt\n        handle\n        onlineStoreUrl\n        title\n        featuredImage {\n          url\n          altText\n        }\n      }\n    }\n    collections(\n      first: $urlLimits\n      query: "published_status:\'online_store:visible\'"\n    ) {\n      nodes {\n        updatedAt\n        handle\n        onlineStoreUrl\n      }\n    }\n    pages(first: $urlLimits, query: "published_status:\'published\'") {\n      nodes {\n        updatedAt\n        handle\n        onlineStoreUrl\n      }\n    }\n  }\n': {
     return: SitemapQuery;
     variables: SitemapQueryVariables;
+  };
+  '#graphql\n  query FeaturedCollections {\n  collections(first: 1, query: "collection_type:smart") {\n    nodes {\n      id\n      title\n      handle\n      products(first: 4) {\n        nodes {\n          id\n          title\n          publishedAt\n          handle\n          variants(first: 1) {\n            nodes {\n              id\n              image {\n                url\n                altText\n                width\n                height\n              }\n              price {\n                amount\n                currencyCode\n              }\n              compareAtPrice {\n                amount\n                currencyCode\n              }\n            }\n          }\n        }\n      }\n    }\n  }\n}\n': {
+    return: FeaturedCollectionsQuery;
+    variables: FeaturedCollectionsQueryVariables;
   };
   '#graphql\n  fragment FeaturedCollection on Collection {\n    id\n    title\n    image {\n      id\n      url\n      altText\n      width\n      height\n    }\n    handle\n  }\n  query FeaturedCollection($country: CountryCode, $language: LanguageCode)\n    @inContext(country: $country, language: $language) {\n    collections(first: 1, sortKey: UPDATED_AT, reverse: true) {\n      nodes {\n        ...FeaturedCollection\n      }\n    }\n  }\n': {
     return: FeaturedCollectionQuery;

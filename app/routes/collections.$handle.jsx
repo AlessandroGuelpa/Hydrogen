@@ -15,6 +15,8 @@ export const meta = ({data}) => {
   return [{title: `Hydrogen | ${data?.collection.title ?? ''} Collection`}];
 };
 
+
+
 /**
  * @param {LoaderFunctionArgs}
  */
