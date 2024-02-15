@@ -489,3 +489,15 @@ aside li {
   color: black;
   border: 1px solid black;
 }
+.policy h1{
+  text-align: center;
+}
+.policy{
+  text-align: justify;
+  padding: 0 10%;
+}
+@media screen and (max-width: 1200px){
+  .product-main {
+    position: static;
+  }
+}

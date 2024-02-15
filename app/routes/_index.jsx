@@ -2,7 +2,6 @@ import {defer} from '@shopify/remix-oxygen';
 import {Await, useLoaderData, Link} from '@remix-run/react';
 import {Suspense} from 'react';
 import {Image, Money} from '@shopify/hydrogen';
-import ProductGrid from '../components/ProductGrid';
 
 /**
  * @type {MetaFunction}
@@ -19,8 +18,9 @@ export async function loader({context}) {
   const {collections} = await storefront.query(FEATURED_COLLECTION_QUERY);
   const featuredCollection = collections.nodes[0];
   const recommendedProducts = storefront.query(RECOMMENDED_PRODUCTS_QUERY);
+  const addSomeProduct = storefront.query(ADD_PRODUCTS_QUERY);
 
-  return defer({featuredCollection, recommendedProducts});
+  return defer({featuredCollection, recommendedProducts, addSomeProduct});
 }
 
 export default function Homepage() {
@@ -29,6 +29,7 @@ export default function Homepage() {
   return (
     <div className="home">
       <FeaturedCollection collection={data.featuredCollection} />
+      <AddSomeProduct products={data.addSomeProduct} />
       <RecommendedProducts products={data.recommendedProducts} />
     </div>
   );
@@ -56,21 +57,21 @@ function FeaturedCollection({collection}) {
     </Link>
 
   );
-  <ProductGrid
-        collection={collection}
-        url={`/collections/${collection.handle}`}
-      />
+
 }
 
 /**
  * @param {{
  *   products: Promise<RecommendedProductsQuery>;
+ *   products: Promise<AddSomeProductQuery>;
  * }}
  */
-function RecommendedProducts({products}) {
+
+/* Add some collections function */
+function AddSomeProduct({products}) {
   return (
     <div className="recommended-products">
-      <h2>Recommended Products</h2>
+      <h2>Some Products</h2>
       <Suspense fallback={<div>Loading...</div>}>
         <Await resolve={products}>
           {({products}) => (
@@ -101,44 +102,41 @@ function RecommendedProducts({products}) {
   );
 }
 
-const COLLECTION_QUERY = `#graphql
-  query FeaturedCollections {
-  collections(first: 1, query: "collection_type:smart") {
-    nodes {
-      id
-      title
-      handle
-      products(first: 4) {
-        nodes {
-          id
-          title
-          publishedAt
-          handle
-          variants(first: 1) {
-            nodes {
-              id
-              image {
-                url
-                altText
-                width
-                height
-              }
-              price {
-                amount
-                currencyCode
-              }
-              compareAtPrice {
-                amount
-                currencyCode
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+/* End some collections function */
+
+function RecommendedProducts({products}) {
+  return (
+    <div className="recommended-products">
+      <h2>Recommended Products</h2>
+      <Suspense fallback={<div>Loading...</div>}>
+        <Await resolve={products}>
+          {({products}) => (
+            <div className="recommended-products-grid">
+              {products.nodes.map((product) => (
+                <Link
+                  key={product.id}
+                  className="recommended-product"
+                  to={`/products/${product.handle}`}
+                >
+                  <Image
+                    data={product.images.nodes[0]}
+                    aspectRatio="1/1"
+                    sizes="(min-width: 45em) 20vw, 50vw"
+                  />
+                  <h4>{product.title}</h4>
+                  <small>
+                    <Money data={product.priceRange.minVariantPrice} />
+                  </small>
+                </Link>
+              ))}
+            </div>
+          )}
+        </Await>
+      </Suspense>
+      <br /><br />
+    </div>
+  );
 }
-`;
 
 
 const FEATURED_COLLECTION_QUERY = `#graphql
@@ -190,6 +188,37 @@ const RECOMMENDED_PRODUCTS_QUERY = `#graphql
     products(first: 4, sortKey: UPDATED_AT, reverse: true) {
       nodes {
         ...RecommendedProduct
+      }
+    }
+  }
+`;
+
+const ADD_PRODUCTS_QUERY = `#graphql
+  fragment AddSomeProduct on Product {
+    id
+    title
+    handle
+    priceRange {
+      minVariantPrice {
+        amount
+        currencyCode
+      }
+    }
+    images(first: 1) {
+      nodes {
+        id
+        url
+        altText
+        width
+        height
+      }
+    }
+  }
+  query AddSomeProduct ($country: CountryCode, $language: LanguageCode)
+    @inContext(country: $country, language: $language) {
+    products(first: 4, sortKey: CREATED_AT, reverse: true) {
+      nodes {
+        ...AddSomeProduct
       }
     }
   }

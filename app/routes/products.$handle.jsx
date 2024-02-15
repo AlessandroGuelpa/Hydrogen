@@ -24,7 +24,7 @@ export const meta = ({data}) => {
 export async function loader({params, request, context}) {
   const {handle} = params;
   const {storefront} = context;
-
+  const recommendedProducts = storefront.query(RECOMMENDED_PRODUCTS_QUERY);
   const selectedOptions = getSelectedProductOptions(request).filter(
     (option) =>
       // Filter out Shopify predictive search query params
@@ -76,7 +76,7 @@ export async function loader({params, request, context}) {
     variables: {handle},
   });
 
-  return defer({product, variants});
+  return defer({product, variants, recommendedProducts});
 }
 
 /**
@@ -106,6 +106,7 @@ export default function Product() {
   /** @type {LoaderReturnData} */
   const {product, variants} = useLoaderData();
   const {selectedVariant} = product;
+  const data = useLoaderData();
   return (
     <div className="product">
       <ProductImage image={selectedVariant?.image} />
@@ -114,6 +115,7 @@ export default function Product() {
         product={product}
         variants={variants}
       />
+      <RecommendedProducts products={data.recommendedProducts} />
     </div>
   );
 }
@@ -258,7 +260,7 @@ function ProductForm({product, selectedVariant, variants}) {
 function ProductOptions({option}) {
   return (
     <div className="product-options" key={option.name}>
-      <h5>{option.name}</h5>
+      <h5 id="option_name">{option.name}</h5>
       <div className="product-options-grid">
         {option.values.map(({value, isAvailable, isActive, to}) => {
           return (
@@ -283,7 +285,6 @@ function ProductOptions({option}) {
     </div>
   );
 }
-
 /**
  * @param {{
  *   analytics?: unknown;
@@ -315,6 +316,76 @@ function AddToCartButton({analytics, children, disabled, lines, onClick}) {
     </CartForm>
   );
 }
+
+
+/**
+ * @param {{
+*   products: Promise<RecommendedProductsQuery>;
+* }}
+*/function RecommendedProducts({products}) {
+  return (
+    <div className="recommended-products">
+      <h2>Recommended Products</h2>
+      <Suspense fallback={<div>Loading...</div>}>
+        <Await resolve={products}>
+          {({products}) => (
+            <div className="recommended-products-grid">
+              {products.nodes.map((product) => (
+                <Link
+                  key={product.id}
+                  className="recommended-product"
+                  to={`/products/${product.handle}`}
+                >
+                  <Image
+                    data={product.images.nodes[0]}
+                    aspectRatio="1/1"
+                    sizes="(min-width: 45em) 20vw, 50vw"
+                  />
+                  <h4>{product.title}</h4>
+                  <small>
+                    <Money data={product.priceRange.minVariantPrice} />
+                  </small>
+                </Link>
+              ))}
+            </div>
+          )}
+        </Await>
+      </Suspense>
+      <br /><br />
+    </div>
+  );
+}
+
+const RECOMMENDED_PRODUCTS_QUERY = `#graphql
+  fragment RecommendedProduct on Product {
+    id
+    title
+    handle
+    priceRange {
+      minVariantPrice {
+        amount
+        currencyCode
+      }
+    }
+    images(first: 1) {
+      nodes {
+        id
+        url
+        altText
+        width
+        height
+      }
+    }
+  }
+  query RecommendedProducts ($country: CountryCode, $language: LanguageCode)
+    @inContext(country: $country, language: $language) {
+    products(first: 4, sortKey: UPDATED_AT, reverse: true) {
+      nodes {
+        ...RecommendedProduct
+      }
+    }
+  }
+`;
 
 const PRODUCT_VARIANT_FRAGMENT = `#graphql
   fragment ProductVariant on ProductVariant {
@@ -418,7 +489,6 @@ const VARIANTS_QUERY = `#graphql
     }
   }
 `;
-
 /** @typedef {import('@shopify/remix-oxygen').LoaderFunctionArgs} LoaderFunctionArgs */
 /** @template T @typedef {import('@remix-run/react').MetaFunction<T>} MetaFunction */
 /** @typedef {import('@remix-run/react').FetcherWithComponents} FetcherWithComponents */
